@@ -1,0 +1,10 @@
+[01 trace] LoggerSetup.java:20 main: turkey 
+[02 debug] LoggerSetup.java:21 main: duck 
+[03 info] LoggerSetup.java:22 main: ibis 
+[04 warn] LoggerSetup.java:23 main: wren 
+[05 error] LoggerSetup.java:24 main: ERROR java.lang.Exception: emu
+	at LoggerSetup.outputMessages(LoggerSetup.java:24)
+	at LoggerSetup.main(LoggerSetup.java:39)
+[06 fatal] LoggerSetup.java:25 main: Catching java.lang.RuntimeException: falcon
+	at LoggerSetup.outputMessages(LoggerSetup.java:25)
+	at LoggerSetup.main(LoggerSetup.java:39)

@@ -1,0 +1,90 @@
+name: GitHub Classroom Workflow
+
+# the autograder action does not have access to environment variables
+# the autograder action does not seem to use the maven cache
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  # standard autograder java setup
+  # separate job so status of autograder affects status of job
+  # without having to use continue-on-error and allowing concurrent followup jobs
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      points: ${{ steps.autograder.outputs.points }}
+      outcome: ${{ steps.autograder.outcome }}
+
+    steps:
+      - name: Checkout Homework Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Homework Test Environment
+        uses: usf-cs272-fall2021/action-homework@main
+
+      - name: Setup Java JDK 16
+        uses: actions/setup-java@v1
+        with:
+          java-version: 16
+
+      - name: Run Autograder
+        id: autograder
+        uses: education/autograding@v1
+
+  # make points badge for readme
+  # https://education.github.community/t/autograder-score-on-readme/66289/2
+  # https://github.com/emibcn/badge-action/tree/master#commit-the-changes-to-dedicated-branch
+
+  badge:
+    name: Generate Points Badge
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    if: always()
+    needs: build
+    outputs:
+      color: ${{ steps.results.outputs.color }}
+
+    steps:
+      - name: Check Result
+        id: results
+        run: |
+          outcome="${{ needs.build.outputs.outcome }}"
+          color="f85149"
+
+          if [[ $outcome == "success" ]]; then
+            color="2ea043"
+          fi
+
+          echo "::set-output name=color::$color"
+
+      - name: Checkout Homework Repository
+        uses: actions/checkout@v2
+        with:
+          ref: 'badges'
+
+      - name: Checkout Badges Branch
+        run: |
+          git rm --cached $(git ls-files)
+          echo "# Badges branch" > README.md
+          echo "![Points](points.svg)" >> README.md
+
+      - name: Generate Points Badge
+        uses: emibcn/badge-action@v1.2.1
+        with:
+          label: 'Points'
+          status: '${{ needs.build.outputs.points }}'
+          color: '${{ steps.results.outputs.color }}'
+          path: 'points.svg'
+
+      - name: Push Points Badge
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add points.svg
+          git add README.md
+          git commit --allow-empty -m "Updated points badge"
+          git push origin badges --force
